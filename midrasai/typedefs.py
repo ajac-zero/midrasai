@@ -1,5 +1,6 @@
 from typing import Literal, TypeAlias
 
+from PIL.Image import Image
 from pydantic import BaseModel
 
 Embedding: TypeAlias = list[float]
@@ -18,3 +19,7 @@ class MidrasRequest(BaseModel):
 class MidrasResponse(BaseModel):
     credits_spent: int
     embeddings: list[ColBERT]
+    images: list[Image] | None = None
+
+    class Config:
+        arbitrary_types_allowed = True
