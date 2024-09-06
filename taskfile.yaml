@@ -5,3 +5,7 @@ tasks:
     cmds:
       - poetry run ruff check --select I --fix
       - poetry run ruff format
+  publish:
+    cmds:
+      - poetry build
+      - poetry publish
