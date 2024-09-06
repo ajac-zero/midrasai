@@ -1,4 +1,5 @@
-import base64, io
+import base64
+import io
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
