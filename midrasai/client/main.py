@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from typing import Any
 
 import httpx
 from pdf2image import convert_from_path
@@ -7,7 +8,7 @@ from PIL.Image import Image
 from midrasai._constants import CLOUD_URL
 from midrasai.client._vector_module import AsyncQdrantModule, QdrantModule
 from midrasai.client.utils import base64_encode_image_list
-from midrasai.typedefs import Base64Image, MidrasResponse, Mode
+from midrasai.typedefs import Base64Image, ColBERT, MidrasResponse, Mode
 
 
 class BaseMidras(ABC):
@@ -46,10 +47,19 @@ class BaseMidras(ABC):
 
 
 class Midras(BaseMidras):
-    def __init__(self, api_key: str, qdrant: str, *args, **kwargs):
-        self.api_key = api_key
+    def __init__(self, midras_key: str, qdrant: str = ":memory:", *args, **kwargs):
+        self.api_key = midras_key
         self.client = httpx.Client(base_url=CLOUD_URL)
         self.index = QdrantModule(location=qdrant, *args, **kwargs)
+
+    def create_index(self, name: str) -> bool:
+        return self.index.create_collection(name)
+
+    def add_point(
+        self, collection: str, id: str | int, embedding: ColBERT, data: dict[str, Any]
+    ):
+        point = self.index.create_entry(id=id, vector=embedding, payload=data)
+        return self.index.save_entries(collection, [point])
 
     def embed_base64_images(
         self, base64_images: list[Base64Image], mode: Mode = "standard"
@@ -73,16 +83,25 @@ class Midras(BaseMidras):
         response = self.client.post("", json=json, timeout=180)
         return self.validate_response(response)
 
-    def query_text(self, collection_name: str, text: str):
+    def query_text(self, collection_name: str, text: str, k: int = 5):
         query_vector = self.embed_text([text]).embeddings[0]
-        return self.index.query(collection_name, query_vector)
+        return self.index.query(collection_name, query_vector, k)
 
 
 class AsyncMidras(BaseMidras):
-    def __init__(self, api_key: str, qdrant: str, *args, **kwargs):
-        self.api_key = api_key
+    def __init__(self, midras_key: str, qdrant: str = ":memory:", *args, **kwargs):
+        self.api_key = midras_key
         self.client = httpx.AsyncClient(base_url=CLOUD_URL)
         self.index = AsyncQdrantModule(location=qdrant * args, **kwargs)
+
+    def create_index(self, name: str) -> bool:
+        return self.index.create_collection(name)
+
+    def add_point(
+        self, collection: str, id: str | int, embedding: ColBERT, data: dict[str, Any]
+    ):
+        point = self.index.create_entry(id=id, vector=embedding, payload=data)
+        return self.index.save_entries(collection, [point])
 
     async def embed_base64_images(
         self, base64_images: list[Base64Image], mode: Mode = "standard"

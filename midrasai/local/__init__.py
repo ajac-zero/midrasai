@@ -1,4 +1,3 @@
-from midrasai.local.model import ColPali
-from midrasai.local.processing import ColPaliProcessor
+from midrasai.local.main import LocalMidras
 
-__all__ = ["ColPali", "ColPaliProcessor"]
+__all__ = ["LocalMidras"]

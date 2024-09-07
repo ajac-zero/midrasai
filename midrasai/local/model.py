@@ -4,7 +4,6 @@ import torch
 from transformers import (
     PaliGemmaForConditionalGeneration,
     PaliGemmaPreTrainedModel,
-    PreTrainedModel,
 )
 
 

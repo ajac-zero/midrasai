@@ -11,6 +11,8 @@ midrasai = "midrasai.cli:midrascli"
 [tool.poetry.dependencies]
 python = "^3.10"
 click = "^8.1"
+qdrant-client = "^1.11.1"
+pdf2image = "^1.17.0"
 torch = { version = "^2.4", optional = true }
 transformers = { version = "^4.44", optional = true }
 peft = { version = "^0.12", optional = true }
@@ -43,9 +45,8 @@ pytest = "^8.3.2"
 
 
 [tool.poetry.group.docs.dependencies]
-qdrant-client = "^1.11.1"
 ipykernel = "^6.29.5"
-pdf2image = "^1.17.0"
+matplotlib = "^3.9.2"
 
 [build-system]
 requires = ["poetry-core"]
