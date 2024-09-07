@@ -56,10 +56,10 @@ class Midras(BaseMidras):
         return self.index.create_collection(name)
 
     def add_point(
-        self, collection: str, id: str | int, embedding: ColBERT, data: dict[str, Any]
+        self, index: str, id: str | int, embedding: ColBERT, data: dict[str, Any]
     ):
         point = self.index.create_entry(id=id, vector=embedding, payload=data)
-        return self.index.save_entries(collection, [point])
+        return self.index.save_entries(index, [point])
 
     def embed_base64_images(
         self, base64_images: list[Base64Image], mode: Mode = "standard"
@@ -83,9 +83,9 @@ class Midras(BaseMidras):
         response = self.client.post("", json=json, timeout=180)
         return self.validate_response(response)
 
-    def query_text(self, collection_name: str, text: str, k: int = 5):
+    def query_text(self, index: str, text: str, k: int = 5):
         query_vector = self.embed_text([text]).embeddings[0]
-        return self.index.query(collection_name, query_vector, k)
+        return self.index.query(index, query_vector, k)
 
 
 class AsyncMidras(BaseMidras):
@@ -98,10 +98,10 @@ class AsyncMidras(BaseMidras):
         return self.index.create_collection(name)
 
     def add_point(
-        self, collection: str, id: str | int, embedding: ColBERT, data: dict[str, Any]
+        self, index: str, id: str | int, embedding: ColBERT, data: dict[str, Any]
     ):
         point = self.index.create_entry(id=id, vector=embedding, payload=data)
-        return self.index.save_entries(collection, [point])
+        return self.index.save_entries(index, [point])
 
     async def embed_base64_images(
         self, base64_images: list[Base64Image], mode: Mode = "standard"
@@ -127,6 +127,6 @@ class AsyncMidras(BaseMidras):
         response = await self.client.post("", json=json, timeout=180)
         return self.validate_response(response)
 
-    async def query_text(self, collection_name: str, text: str):
+    async def query_text(self, index: str, text: str):
         query_vector = (await self.embed_text([text])).embeddings[0]
-        return await self.index.query(collection_name, query_vector)
+        return await self.index.query(index, query_vector)
