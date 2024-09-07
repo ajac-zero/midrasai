@@ -110,4 +110,4 @@ for result in results[:3]:
     print(f"data: {result.data}")
 ```
 
-If you want a more detailed example, check out the [example vector search notebook](https://github.com/Midras-AI-Systems/midrasai/blob/main/examples/vector_search/vector_search.ipynb).
+If you want a more detailed example including RAG, check out the [example vector search notebook](https://github.com/Midras-AI-Systems/midrasai/blob/main/examples/vector_search/vector_search.ipynb).

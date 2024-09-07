@@ -47,6 +47,7 @@ pytest = "^8.3.2"
 [tool.poetry.group.docs.dependencies]
 ipykernel = "^6.29.5"
 matplotlib = "^3.9.2"
+google-generativeai = "^0.7.2"
 
 [build-system]
 requires = ["poetry-core"]
