@@ -3,7 +3,7 @@ from PIL.Image import Image
 from midrasai.client import Midras
 from midrasai.local.model import ColPali
 from midrasai.local.processing import ColPaliProcessor
-from midrasai.typedefs import Base64Image, MidrasResponse
+from midrasai.typedefs import MidrasResponse
 
 
 class LocalMidras(Midras):

@@ -1,4 +1,4 @@
-from typing import Literal, TypeAlias
+from typing import Any, Dict, Literal, TypeAlias
 
 from PIL.Image import Image
 from pydantic import BaseModel
@@ -23,3 +23,9 @@ class MidrasResponse(BaseModel):
 
     class Config:
         arbitrary_types_allowed = True
+
+
+class QueryResult(BaseModel):
+    id: int | str
+    score: float
+    data: Dict[str, Any] | None
