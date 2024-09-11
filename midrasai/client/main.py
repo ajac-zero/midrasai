@@ -6,14 +6,15 @@ from PIL.Image import Image
 
 from midrasai._constants import CLOUD_URL
 from midrasai.client._abc import BaseMidras
-from midrasai.client._vector_module import AsyncQdrantModule, QdrantModule
 from midrasai.client.utils import base64_encode_image_list
 from midrasai.typedefs import Base64Image, ColBERT, MidrasRequest, MidrasResponse, Mode
+from midrasai.vectordb import AsyncQdrant, Qdrant
+from midrasai.vectordb._abc import AsyncVectorDB, VectorDB
 
 
 class BaseAPIMidras(BaseMidras):
-    def __init__(self, midras_key: str):
-        self.api_key = midras_key
+    def __init__(self, api_key: str):
+        self.api_key = api_key
 
     def validate_response(self, response: httpx.Response) -> MidrasResponse:
         if response.status_code >= 500:
@@ -22,10 +23,10 @@ class BaseAPIMidras(BaseMidras):
 
 
 class Midras(BaseAPIMidras):
-    def __init__(self, midras_key: str, qdrant: str = ":memory:", *args, **kwargs):
-        super().__init__(midras_key)
+    def __init__(self, api_key: str, vector_database: VectorDB | None = None):
+        super().__init__(api_key)
         self.client = httpx.Client(base_url=CLOUD_URL)
-        self.index = QdrantModule(location=":memory:", *args, **kwargs)
+        self.index = vector_database if vector_database else Qdrant(location=":memory:")
 
     def embed_pdf(
         self, pdf_path: str, batch_size: int = 10, include_images: bool = False
@@ -89,10 +90,12 @@ class Midras(BaseAPIMidras):
 
 
 class AsyncMidras(BaseAPIMidras):
-    def __init__(self, midras_key: str, qdrant: str = ":memory:", *args, **kwargs):
-        super().__init__(midras_key)
+    def __init__(self, api_key: str, vector_database: AsyncVectorDB | None = None):
+        super().__init__(api_key)
         self.client = httpx.AsyncClient(base_url=CLOUD_URL)
-        self.index = AsyncQdrantModule(location=qdrant, *args, **kwargs)
+        self.index = (
+            vector_database if vector_database else AsyncQdrant(location=":memory:")
+        )
 
     async def embed_pdf(
         self, pdf_path: str, batch_size: int = 10, include_images: bool = False
@@ -122,11 +125,11 @@ class AsyncMidras(BaseAPIMidras):
     async def create_index(self, name: str) -> bool:
         return await self.index.create_index(name)
 
-    def add_point(
+    async def add_point(
         self, index: str, id: str | int, embedding: ColBERT, data: dict[str, Any]
     ):
-        point = self.index.create_point(id=id, embedding=embedding, data=data)
-        return self.index.save_points(index, [point])
+        point = await self.index.create_point(id=id, embedding=embedding, data=data)
+        return await self.index.save_points(index, [point])
 
     async def embed_base64_images(
         self, base64_images: list[Base64Image], mode: Mode = "standard"
