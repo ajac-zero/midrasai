@@ -2,8 +2,8 @@ from typing import Any, Awaitable, Callable, Dict, Optional, Union
 
 from qdrant_client import AsyncQdrantClient, QdrantClient, models
 
-from midrasai.typedefs import ColBERT, QueryResult
-from midrasai.vectordb._abc import AsyncVectorDB, VectorDB
+from midrasai._abc import AsyncVectorDB, VectorDB
+from midrasai.types import ColBERT, QueryResult
 
 
 class Qdrant(VectorDB):

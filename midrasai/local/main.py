@@ -1,47 +1,71 @@
-from pdf2image import convert_from_path
-from PIL.Image import Image
+from typing import cast
 
-from midrasai.client._abc import BaseMidras
-from midrasai.local.model import ColPali
-from midrasai.local.processing import ColPaliProcessor
-from midrasai.typedefs import Base64Image, MidrasResponse, Mode
+import torch  # type: ignore
+from colpali_engine import ColPali, ColPaliProcessor
+from pdf2image import convert_from_path
+
+from midrasai._abc import BaseMidras, VectorDB
+from midrasai.types import MidrasResponse
+from midrasai.vectordb import Qdrant
 
 
 class LocalMidras(BaseMidras):
-    def __init__(self, qdrant: str = ":memory:", *args, **kwargs):
-        super().__init__()
-        self.model = ColPali.initialize()
-        self.processor = ColPaliProcessor()
+    def __init__(
+        self, device_map: str = "cuda:0", vector_database: VectorDB | None = None
+    ):
+        self.model = cast(
+            ColPali,
+            ColPali.from_pretrained(
+                "vidore/colpali-v1.2",
+                torch_dtype=torch.bfloat16,
+                device_map=device_map,
+            ),
+        )
+        self.processor = cast(
+            ColPaliProcessor,
+            ColPaliProcessor.from_pretrained("google/paligemma-3b-mix-448"),
+        )
+        self.index = vector_database if vector_database else Qdrant(location=":memory:")
 
     def embed_pdf(
-        self, pdf_path: str, batch_size: int = 10, include_images: bool = False
+        self, pdf_path, batch_size=10, include_images=False
     ) -> MidrasResponse:
         images = convert_from_path(pdf_path)
         embeddings = []
-        total_spent = 0
 
         for i in range(0, len(images), batch_size):
             image_batch = images[i : i + batch_size]
-            response = self.embed_pil_images(image_batch)
+            response = self.embed_images(image_batch)
             embeddings.extend(response.embeddings)
-            total_spent += response.credits_spent
 
         return MidrasResponse(
-            credits_spent=total_spent,
+            credits_spent=0,
             embeddings=embeddings,
             images=images if include_images else None,
         )
 
-    def embed_pil_images(
-        self, pil_images: list[Image], mode: Mode = "standard"
-    ) -> MidrasResponse:
-        embeddings = self.processor.batch_embed_images(self.model, pil_images)
-        return MidrasResponse(credits_spent=0, embeddings=embeddings)
+    def embed_images(self, images, mode="local"):
+        batch_images = self.processor.process_images(images).to(self.model.device)
+        with torch.no_grad():
+            image_embeddings = self.model(**batch_images)
+        return MidrasResponse(credits_spent=0, embeddings=image_embeddings.tolist())
 
-    def embed_base64_images(
-        self, base64_images: list[Base64Image], mode: Mode = "standard"
-    ) -> MidrasResponse: ...
+    def embed_queries(self, queries, mode="local"):
+        batch_queries = self.processor.process_queries(queries).to(self.model.device)
+        with torch.no_grad():
+            query_embeddings = self.model(**batch_queries)
+        return MidrasResponse(credits_spent=0, embeddings=query_embeddings.tolist())
 
-    def embed_text(self, texts: list[str], mode: Mode = "standard") -> MidrasResponse:
-        embeddings = self.processor.batch_embed_queries(self.model, texts)
-        return MidrasResponse(credits_spent=0, embeddings=embeddings)
+    def create_index(self, name):
+        return self.index.create_index(name)
+
+    def add_point(self, index, id, embedding, data):
+        point = self.index.create_point(id=id, embedding=embedding, data=data)
+        return self.index.save_points(index, [point])
+
+    def query(self, index, query, quantity=5):
+        query_vector = self.embed_queries([query]).embeddings[0]
+        return self.index.search(index, query_vector, quantity)
+
+    def delete_index(self, name):
+        return self.index.delete_index(name)

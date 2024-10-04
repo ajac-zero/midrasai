@@ -9,3 +9,6 @@ tasks:
     cmds:
       - poetry build
       - poetry publish
+  test:
+    cmds:
+      - pytest tests -v

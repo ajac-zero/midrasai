@@ -1,19 +1,21 @@
 from typing import Any, Dict, Literal, TypeAlias
 
-from PIL.Image import Image
+from PIL import Image as PILImage
+from PIL import ImageFile
 from pydantic import BaseModel
 
 Embedding: TypeAlias = list[float]
 ColBERT: TypeAlias = list[Embedding]
 Base64Image: TypeAlias = str
-Mode: TypeAlias = Literal["standard", "turbo"]
+Mode: TypeAlias = Literal["standard", "turbo", "local"]
+Image: TypeAlias = PILImage.Image | ImageFile.ImageFile
 
 
 class MidrasRequest(BaseModel):
-    api_key: str
+    key: str
     mode: Mode = "standard"
-    inputs: list[str]
-    image_input: bool = False
+    base64images: list[str] | None = None
+    queries: list[str] | None = None
 
 
 class MidrasResponse(BaseModel):
