@@ -1,6 +1,6 @@
 from typing import cast
 
-import torch  # type: ignore
+import torch
 from colpali_engine import ColPali, ColPaliProcessor
 from pdf2image import convert_from_path
 
@@ -9,21 +9,22 @@ from midrasai.types import MidrasResponse
 from midrasai.vectordb import Qdrant
 
 
-class LocalMidras(BaseMidras):
+class Midras(BaseMidras):
     def __init__(
         self, device_map: str = "cuda:0", vector_database: VectorDB | None = None
     ):
+        model_name = "vidore/colpali-v1.2"
         self.model = cast(
             ColPali,
             ColPali.from_pretrained(
-                "vidore/colpali-v1.2",
-                torch_dtype=torch.bfloat16,
+                model_name,
+                torch_dtype=torch.bfloat16,  # type: ignore
                 device_map=device_map,
             ),
         )
         self.processor = cast(
             ColPaliProcessor,
-            ColPaliProcessor.from_pretrained("google/paligemma-3b-mix-448"),
+            ColPaliProcessor.from_pretrained(model_name),
         )
         self.index = vector_database if vector_database else Qdrant(location=":memory:")
 
@@ -45,14 +46,16 @@ class LocalMidras(BaseMidras):
         )
 
     def embed_images(self, images, mode="local"):
+        _ = mode
         batch_images = self.processor.process_images(images).to(self.model.device)
-        with torch.no_grad():
+        with torch.no_grad():  # type: ignore
             image_embeddings = self.model(**batch_images)
         return MidrasResponse(credits_spent=0, embeddings=image_embeddings.tolist())
 
     def embed_queries(self, queries, mode="local"):
+        _ = mode
         batch_queries = self.processor.process_queries(queries).to(self.model.device)
-        with torch.no_grad():
+        with torch.no_grad():  # type: ignore
             query_embeddings = self.model(**batch_queries)
         return MidrasResponse(credits_spent=0, embeddings=query_embeddings.tolist())
 

@@ -1,3 +1,3 @@
-from midrasai.local.main import LocalMidras
+from midrasai.local.main import Midras
 
-__all__ = ["LocalMidras"]
+__all__ = ["Midras"]

@@ -4,14 +4,13 @@ import httpx
 from pdf2image import convert_from_path
 
 from midrasai._abc import (
-    AsyncVectorDB,
-    BaseAsyncMidras,
+    AsyncBaseMidras,
     BaseMidras,
     VectorDB,
 )
 from midrasai._constants import CLOUD_URL
 from midrasai.types import ColBERT, Image, MidrasRequest, MidrasResponse, Mode
-from midrasai.vectordb import AsyncQdrant, Qdrant
+from midrasai.vectordb import Qdrant
 
 
 class Midras(BaseMidras):
@@ -40,9 +39,9 @@ class Midras(BaseMidras):
         )
 
     def embed_images(
-        self, pil_images: list[Image], *, mode: Mode = "standard"
+        self, images: list[Image], mode: Mode = "standard"
     ) -> MidrasResponse:
-        base64_images = self.base64_encode_image_list(pil_images)
+        base64_images = self.base64_encode_image_list(images)
 
         request = MidrasRequest(
             key=self.api_key,
@@ -53,8 +52,6 @@ class Midras(BaseMidras):
         response = self.client.post(
             "/embed/images", json=request.model_dump(), timeout=180
         )
-
-        print(response.status_code)
 
         return response.json()
 
@@ -68,12 +65,12 @@ class Midras(BaseMidras):
         return self.index.save_points(index, [point])
 
     def embed_queries(
-        self, texts: list[str], mode: Mode = "standard"
+        self, queries: list[str], mode: Mode = "standard"
     ) -> MidrasResponse:
         request = MidrasRequest(
             key=self.api_key,
             mode=mode,
-            queries=texts,
+            queries=queries,
         )
         response = self.client.post(
             "/embed/queries", json=request.model_dump(), timeout=180
@@ -85,18 +82,11 @@ class Midras(BaseMidras):
         return self.index.search(index, query_vector, quantity)
 
 
-class AsyncMidras(BaseAsyncMidras):
-    def __init__(self, api_key: str, vector_database: AsyncVectorDB | None = None):
+class AsyncMidras(AsyncBaseMidras):
+    def __init__(self, api_key: str, vector_database: VectorDB | None = None):
         self.api_key = api_key
         self.client = httpx.AsyncClient(base_url=CLOUD_URL)
-        self.index = (
-            vector_database if vector_database else AsyncQdrant(location=":memory:")
-        )
-
-    def validate_response(self, response: httpx.Response) -> MidrasResponse:
-        if response.status_code >= 500:
-            raise ValueError(response.text)
-        return MidrasResponse(**response.json())
+        self.index = vector_database if vector_database else Qdrant(location=":memory:")
 
     async def embed_pdf(
         self, pdf_path: str, batch_size: int = 10, include_images: bool = False
@@ -118,9 +108,9 @@ class AsyncMidras(BaseAsyncMidras):
         )
 
     async def embed_images(
-        self, pil_images: list[Image], mode: Mode = "standard"
+        self, images: list[Image], mode: Mode = "standard"
     ) -> MidrasResponse:
-        base64_images = self.base64_encode_image_list(pil_images)
+        base64_images = self.base64_encode_image_list(images)
 
         request = MidrasRequest(
             key=self.api_key,
@@ -132,28 +122,32 @@ class AsyncMidras(BaseAsyncMidras):
             "/embed/images", json=request.model_dump(), timeout=180
         )
 
-        return self.validate_response(response)
+        print(response.status_code)
+
+        return response.json()
 
     async def create_index(self, name: str) -> bool:
-        return await self.index.create_index(name)
+        return self.index.create_index(name)
 
     async def add_point(
         self, index: str, id: str | int, embedding: ColBERT, data: dict[str, Any]
     ):
-        point = await self.index.create_point(id=id, embedding=embedding, data=data)
-        return await self.index.save_points(index, [point])
+        point = self.index.create_point(id=id, embedding=embedding, data=data)
+        return self.index.save_points(index, [point])
 
-    async def embed_text(
-        self, texts: list[str], mode: Mode = "standard"
+    async def embed_queries(
+        self, queries: list[str], mode: Mode = "standard"
     ) -> MidrasResponse:
         request = MidrasRequest(
             key=self.api_key,
             mode=mode,
-            queries=texts,
+            queries=queries,
         )
-        response = await self.client.post("", json=request.dict(), timeout=180)
-        return self.validate_response(response)
+        response = await self.client.post(
+            "/embed/queries", json=request.model_dump(), timeout=180
+        )
+        return response.json()
 
-    async def query_text(self, index: str, query: str, quantity: int = 5):
-        query_vector = (await self.embed_text([query])).embeddings[0]
-        return await self.index.search(index, query_vector, quantity)
+    async def query(self, index: str, query: str, quantity: int = 5):
+        query_vector = (await self.embed_queries([query])).embeddings[0]
+        return self.index.search(index, query_vector, quantity)
