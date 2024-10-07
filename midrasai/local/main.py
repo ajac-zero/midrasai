@@ -18,7 +18,7 @@ class Midras(BaseMidras):
             ColPali,
             ColPali.from_pretrained(
                 model_name,
-                torch_dtype=torch.bfloat16,  # type: ignore
+                torch_dtype=torch.bfloat16,
                 device_map=device_map,
             ),
         )
@@ -40,7 +40,6 @@ class Midras(BaseMidras):
             embeddings.extend(response.embeddings)
 
         return MidrasResponse(
-            credits_spent=0,
             embeddings=embeddings,
             images=images if include_images else None,
         )
@@ -48,16 +47,16 @@ class Midras(BaseMidras):
     def embed_images(self, images, mode="local"):
         _ = mode
         batch_images = self.processor.process_images(images).to(self.model.device)
-        with torch.no_grad():  # type: ignore
+        with torch.no_grad():
             image_embeddings = self.model(**batch_images)
-        return MidrasResponse(credits_spent=0, embeddings=image_embeddings.tolist())
+        return MidrasResponse(embeddings=image_embeddings.tolist())
 
     def embed_queries(self, queries, mode="local"):
         _ = mode
         batch_queries = self.processor.process_queries(queries).to(self.model.device)
-        with torch.no_grad():  # type: ignore
+        with torch.no_grad():
             query_embeddings = self.model(**batch_queries)
-        return MidrasResponse(credits_spent=0, embeddings=query_embeddings.tolist())
+        return MidrasResponse(embeddings=query_embeddings.tolist())
 
     def create_index(self, name):
         return self.index.create_index(name)

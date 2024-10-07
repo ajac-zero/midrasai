@@ -2,7 +2,7 @@ from typing import Any, Dict, Literal, TypeAlias
 
 from PIL import Image as PILImage
 from PIL import ImageFile
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 Embedding: TypeAlias = list[float]
 ColBERT: TypeAlias = list[Embedding]
@@ -19,12 +19,10 @@ class MidrasRequest(BaseModel):
 
 
 class MidrasResponse(BaseModel):
-    credits_spent: int
     embeddings: list[ColBERT]
     images: list[Image] | None = None
 
-    class Config:
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
 class QueryResult(BaseModel):
