@@ -1,1 +1,1 @@
-CLOUD_URL = "https://midras-api-worker.ajcardoza2000.workers.dev/"
+CLOUD_URL = "https://backend-bold-leaf-5025.fly.dev"

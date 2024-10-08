@@ -1,20 +1,19 @@
-import click
+import warnings
 
 
-@click.command()
-@click.argument("action")
-@click.option("--host", default="127.0.0.1", help="Server host")
-@click.option("--port", default=8765, type=int, help="Server port")
-def midrascli(action, host, port):
-    if action == "server":
+def cli(host: str = "127.0.0.1", port: int = 8000):
+    try:
         import uvicorn
 
         from midrasai.local.server import app
 
         uvicorn.run(app, host=host, port=port)
-    else:
-        click.echo(f"Unknown action: {action}")
+
+    except ImportError:
+        warnings.warn("Local extra dependencies not installed. Server unavailable.")
 
 
 if __name__ == "__main__":
-    midrascli()
+    import typer
+
+    typer.run(cli)
