@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "midrasai"
 version = "0.1.4"
-description = ""
+description = "A simple framework for multimodal RAG"
 authors = ["ajac-zero <ajcardoza2000@gmail.com>"]
 readme = "README.md"
 
