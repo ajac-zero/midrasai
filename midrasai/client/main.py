@@ -1,7 +1,6 @@
 from typing import Any
 
 import httpx
-from pdf2image import convert_from_path
 
 from midrasai._abc import (
     AsyncBaseMidras,
@@ -9,51 +8,55 @@ from midrasai._abc import (
     VectorDB,
 )
 from midrasai._constants import CLOUD_URL
-from midrasai.types import ColBERT, Image, MidrasRequest, MidrasResponse, Mode
+from midrasai.types import ColBERT, MidrasResponse, Mode
 from midrasai.vectordb import Qdrant
 
 
 class Midras(BaseMidras):
-    def __init__(self, api_key: str, vector_database: VectorDB | None = None):
+    def __init__(
+        self,
+        api_key: str,
+        *,
+        vector_database: VectorDB | None = None,
+        base_url: str | None = None,
+    ):
         self.api_key = api_key
-        self.client = httpx.Client(base_url=CLOUD_URL)
+        self.client = httpx.Client(base_url=CLOUD_URL if base_url is None else base_url)
         self.index = vector_database if vector_database else Qdrant(location=":memory:")
 
     def embed_pdf(
-        self, pdf_path: str, batch_size: int = 10, include_images: bool = False
+        self, pdf: str | bytes, batch_size: int = 10, include_images: bool = False
     ) -> MidrasResponse:
-        images = convert_from_path(pdf_path)
-        embeddings = []
-        total_spent = 0
+        _ = batch_size
+        __ = include_images
 
-        for i in range(0, len(images), batch_size):
-            image_batch = images[i : i + batch_size]
-            response = self.embed_images(image_batch)
-            embeddings.extend(response.embeddings)
-            total_spent += response.credits_spent
+        if isinstance(pdf, str):
+            with open(pdf, "rb") as f:
+                file_data = f.read()
+        elif isinstance(pdf, bytes):
+            file_data = pdf
+        else:
+            raise ValueError("pdf must be a file path (str) or bytes")
 
-        return MidrasResponse(
-            credits_spent=total_spent,
-            embeddings=embeddings,
-            images=images if include_images else None,
-        )
+        files = {"file": ("test.pdf", file_data, "application/pdf")}
+        response = self.client.post("/embed/pdf", files=files)
+
+        if response.status_code == 200:
+            return MidrasResponse.model_validate(response.json())
+        else:
+            raise ValueError("Internal server error")
 
     def embed_images(
-        self, images: list[Image], mode: Mode = "standard"
+        self, images: list, mode: Mode = Mode.Standard
     ) -> MidrasResponse:
-        base64_images = self.base64_encode_image_list(images)
+        encoded_images = self.base64_encode_image_list(images)
 
-        request = MidrasRequest(
-            key=self.api_key,
-            mode=mode,
-            base64images=base64_images,
-        )
+        response = self.client.post("/embed/images", json={"images": encoded_images})
 
-        response = self.client.post(
-            "/embed/images", json=request.model_dump(), timeout=180
-        )
-
-        return response.json()
+        if response.status_code == 200:
+            return MidrasResponse.model_validate(response.json())
+        else:
+            raise ValueError("Internal server error")
 
     def create_index(self, name: str) -> bool:
         return self.index.create_index(name)
@@ -65,17 +68,14 @@ class Midras(BaseMidras):
         return self.index.save_points(index, [point])
 
     def embed_queries(
-        self, queries: list[str], mode: Mode = "standard"
+        self, queries: list[str], mode: Mode = Mode.Standard
     ) -> MidrasResponse:
-        request = MidrasRequest(
-            key=self.api_key,
-            mode=mode,
-            queries=queries,
-        )
-        response = self.client.post(
-            "/embed/queries", json=request.model_dump(), timeout=180
-        )
-        return response.json()
+        response = self.client.post("/embed/queries", json={"queries": queries})
+
+        if response.status_code == 200:
+            return MidrasResponse.model_validate(response.json())
+        else:
+            raise ValueError("Internal server error")
 
     def query(self, index: str, query: str, quantity: int = 5):
         query_vector = self.embed_queries([query]).embeddings[0]
@@ -83,48 +83,54 @@ class Midras(BaseMidras):
 
 
 class AsyncMidras(AsyncBaseMidras):
-    def __init__(self, api_key: str, vector_database: VectorDB | None = None):
+    def __init__(
+        self,
+        api_key: str,
+        *,
+        vector_database: VectorDB | None = None,
+        base_url: str | None = None,
+    ):
         self.api_key = api_key
-        self.client = httpx.AsyncClient(base_url=CLOUD_URL)
+        self.client = httpx.AsyncClient(
+            base_url=CLOUD_URL if base_url is None else base_url
+        )
         self.index = vector_database if vector_database else Qdrant(location=":memory:")
 
     async def embed_pdf(
-        self, pdf_path: str, batch_size: int = 10, include_images: bool = False
+        self, pdf: str | bytes, batch_size: int = 10, include_images: bool = False
     ) -> MidrasResponse:
-        images = convert_from_path(pdf_path)
-        embeddings = []
-        total_spent = 0
+        _ = batch_size
+        __ = include_images
 
-        for i in range(0, len(images), batch_size):
-            image_batch = images[i : i + batch_size]
-            response = await self.embed_images(image_batch)
-            embeddings.extend(response.embeddings)
-            total_spent += response.credits_spent
+        if isinstance(pdf, str):
+            with open(pdf, "rb") as f:
+                file_data = f.read()
+        elif isinstance(pdf, bytes):
+            file_data = pdf
+        else:
+            raise ValueError("pdf must be a file path (str) or bytes")
 
-        return MidrasResponse(
-            credits_spent=total_spent,
-            embeddings=embeddings,
-            images=images if include_images else None,
-        )
+        files = {"file": ("test.pdf", file_data, "application/pdf")}
+        response = await self.client.post("/embed/pdf", files=files)
+
+        if response.status_code == 200:
+            return MidrasResponse.model_validate(response.json())
+        else:
+            raise ValueError("Internal server error")
 
     async def embed_images(
-        self, images: list[Image], mode: Mode = "standard"
+        self, images: list, mode: Mode = Mode.Standard
     ) -> MidrasResponse:
-        base64_images = self.base64_encode_image_list(images)
-
-        request = MidrasRequest(
-            key=self.api_key,
-            mode=mode,
-            base64images=base64_images,
-        )
+        encoded_images = self.base64_encode_image_list(images)
 
         response = await self.client.post(
-            "/embed/images", json=request.model_dump(), timeout=180
+            "/embed/images", json={"images": encoded_images}
         )
 
-        print(response.status_code)
-
-        return response.json()
+        if response.status_code == 200:
+            return MidrasResponse.model_validate(response.json())
+        else:
+            raise ValueError("Internal server error")
 
     async def create_index(self, name: str) -> bool:
         return self.index.create_index(name)
@@ -136,17 +142,14 @@ class AsyncMidras(AsyncBaseMidras):
         return self.index.save_points(index, [point])
 
     async def embed_queries(
-        self, queries: list[str], mode: Mode = "standard"
+        self, queries: list[str], mode: Mode = Mode.Standard
     ) -> MidrasResponse:
-        request = MidrasRequest(
-            key=self.api_key,
-            mode=mode,
-            queries=queries,
-        )
-        response = await self.client.post(
-            "/embed/queries", json=request.model_dump(), timeout=180
-        )
-        return response.json()
+        response = await self.client.post("/embed/queries", json={"queries": queries})
+
+        if response.status_code == 200:
+            return MidrasResponse.model_validate(response.json())
+        else:
+            raise ValueError("Internal server error")
 
     async def query(self, index: str, query: str, quantity: int = 5):
         query_vector = (await self.embed_queries([query])).embeddings[0]

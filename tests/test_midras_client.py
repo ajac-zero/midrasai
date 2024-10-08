@@ -1,13 +1,13 @@
 import pytest
 from PIL import Image
 
-from midrasai.local import Midras
+from midrasai import Midras
 from midrasai.types import MidrasResponse, QueryResult
 
 
 @pytest.fixture(scope="module")
 def m():
-    return Midras()
+    return Midras(api_key="test", base_url="http://localhost:8000")
 
 
 @pytest.fixture(scope="module")
@@ -31,9 +31,9 @@ def test_embed_query(m: Midras, state):
 
 
 def test_embed_pdf_path(m: Midras, state):
-    r = m.embed_pdf("./tests/assets/Attention_is_all_you_need.pdf", include_images=True)
+    r = m.embed_pdf("./tests/assets/Attention_is_all_you_need.pdf")
     assert isinstance(r, MidrasResponse)
-    assert len(r.images) == 15  # type: ignore
+
     assert len(r.embeddings) == 15
     assert isinstance(r.embeddings[0], list)
     assert isinstance(r.embeddings[0][0], list)
@@ -43,9 +43,9 @@ def test_embed_pdf_path(m: Midras, state):
 
 def test_embed_pdf_bytes(m: Midras, state):
     with open("./tests/assets/Attention_is_all_you_need.pdf", "rb") as f:
-        r = m.embed_pdf(f.read(), include_images=True)
+        r = m.embed_pdf(f.read())
     assert isinstance(r, MidrasResponse)
-    assert len(r.images) == 15  # type: ignore
+
     assert len(r.embeddings) == 15
     assert isinstance(r.embeddings[0], list)
     assert isinstance(r.embeddings[0][0], list)
@@ -54,13 +54,14 @@ def test_embed_pdf_bytes(m: Midras, state):
 
 
 def test_embed_images(m: Midras, state):
-    r = m.embed_images(
-        [
-            Image.open(open("./tests/assets/Colpali-example1.png", "rb")),  # type: ignore
-            Image.open(open("./tests/assets/Colpali-example2.png", "rb")),  # type: ignore
-            Image.open(open("./tests/assets/Colpali-example3.png", "rb")),  # type: ignore
-        ]
-    )
+    images = [
+        Image.open("./tests/assets/Colpali-example1.png"),
+        Image.open("./tests/assets/Colpali-example2.png"),
+        Image.open("./tests/assets/Colpali-example3.png"),
+    ]
+
+    r = m.embed_images(images)  # type: ignore
+
     assert isinstance(r, MidrasResponse)
     assert len(r.embeddings) == 3
     assert isinstance(r.embeddings[0], list)

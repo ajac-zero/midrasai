@@ -1,8 +1,8 @@
 from typing import cast
 
+import pdf2image
 import torch
 from colpali_engine import ColPali, ColPaliProcessor
-from pdf2image import convert_from_path
 
 from midrasai._abc import BaseMidras, VectorDB
 from midrasai.types import MidrasResponse
@@ -28,10 +28,14 @@ class Midras(BaseMidras):
         )
         self.index = vector_database if vector_database else Qdrant(location=":memory:")
 
-    def embed_pdf(
-        self, pdf_path, batch_size=10, include_images=False
-    ) -> MidrasResponse:
-        images = convert_from_path(pdf_path)
+    def embed_pdf(self, pdf, batch_size=10, include_images=False) -> MidrasResponse:
+        if isinstance(pdf, str):
+            images = pdf2image.convert_from_path(pdf)
+        elif isinstance(pdf, bytes):
+            images = pdf2image.convert_from_bytes(pdf)
+        else:
+            raise ValueError("Invalid type")
+
         embeddings = []
 
         for i in range(0, len(images), batch_size):

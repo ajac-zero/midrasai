@@ -19,7 +19,7 @@ def test_embed_queries(client: TestClient):
     r = client.post("/embed/queries", json={"queries": queries})
 
     assert r.status_code == 200
-    
+
     data = r.json()
     assert data["images"] is None
 
@@ -54,6 +54,24 @@ def test_embed_images(client: TestClient):
 
     embeddings = data["embeddings"]
     assert len(embeddings) == 3
+
+    for colbert in embeddings:
+        assert isinstance(colbert, list)
+        assert isinstance(colbert[0], list)
+
+
+def test_embed_pdf(client: TestClient):
+    with open("./tests/assets/Attention_is_all_you_need.pdf", "rb") as f:
+        files = {"file": ("test.pdf", f, "application/pdf")}
+        r = client.post("/embed/pdf", files=files)
+
+    assert r.status_code == 200
+
+    data = r.json()
+    assert data["images"] is None
+
+    embeddings = data["embeddings"]
+    assert len(embeddings) == 15
 
     for colbert in embeddings:
         assert isinstance(colbert, list)

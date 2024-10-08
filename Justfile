@@ -27,3 +27,6 @@ test-local:
 test-server:
   @poetry run pytest -v tests/test_midras_server.py
 
+# Run tests for Midras client
+test-client:
+  @poetry run pytest -v tests/test_midras_client.py

@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from io import BytesIO
 from typing import cast
 
-from fastapi import FastAPI
+from fastapi import FastAPI, File, UploadFile
 from PIL import Image
 from pydantic import BaseModel
 
@@ -29,7 +29,7 @@ class ImageInput(BaseModel):
     @property
     def pil_images(self):
         return [
-            cast(Image.Image, Image.open(BytesIO(b64decode(image)), formats=["JPEG"]))
+            cast(Image.Image, Image.open(BytesIO(b64decode(image))))
             for image in self.images
         ]
 
@@ -47,4 +47,10 @@ def embed_queries(input: TextInput) -> MidrasResponse:
 @app.post("/embed/images")
 def embed_images(input: ImageInput) -> MidrasResponse:
     image_embeddings = midras.embed_images(input.pil_images)
+    return image_embeddings
+
+
+@app.post("/embed/pdf")
+def embed_pdf(file: UploadFile = File(...)) -> MidrasResponse:
+    image_embeddings = midras.embed_pdf(file.file.read())
     return image_embeddings

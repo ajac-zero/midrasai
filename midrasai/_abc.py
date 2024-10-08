@@ -3,23 +3,23 @@ from base64 import b64encode
 from io import BytesIO
 from typing import Any, Awaitable
 
-from midrasai.types import ColBERT, Image, MidrasResponse, Mode, QueryResult
+from midrasai.types import ColBERT, MidrasResponse, Mode, QueryResult
 
 
 class BaseMidras(ABC):
     @abstractmethod
     def embed_pdf(
-        self, pdf_path: str, batch_size: int = 10, include_images: bool = False
+        self, pdf: str | bytes, batch_size: int = 10, include_images: bool = False
     ) -> MidrasResponse: ...
 
     @abstractmethod
     def embed_images(
-        self, images: list[Image], mode: Mode = "standard"
+        self, images: list, mode: Mode = Mode.Standard
     ) -> MidrasResponse: ...
 
     @abstractmethod
     def embed_queries(
-        self, queries: list[str], mode: Mode = "standard"
+        self, queries: list[str], mode: Mode = Mode.Standard
     ) -> MidrasResponse: ...
 
     @abstractmethod
@@ -33,7 +33,7 @@ class BaseMidras(ABC):
     @abstractmethod
     def query(self, index: str, query: str, quantity: int = 5) -> list[QueryResult]: ...
 
-    def base64_encode_image_list(self, pil_images: list[Image]) -> list[str]:
+    def base64_encode_image_list(self, pil_images: list) -> list[str]:
         base64_images = []
         for image in pil_images:
             with BytesIO() as buffer:
@@ -46,17 +46,17 @@ class BaseMidras(ABC):
 class AsyncBaseMidras(ABC):
     @abstractmethod
     async def embed_pdf(
-        self, pdf_path: str, batch_size: int = 10, include_images: bool = False
+        self, pdf: str | bytes, batch_size: int = 10, include_images: bool = False
     ) -> MidrasResponse: ...
 
     @abstractmethod
     async def embed_images(
-        self, images: list[Image], mode: Mode = "standard"
+        self, images: list, mode: Mode = Mode.Standard
     ) -> MidrasResponse: ...
 
     @abstractmethod
     async def embed_queries(
-        self, queries: list[str], mode: Mode = "standard"
+        self, queries: list[str], mode: Mode = Mode.Standard
     ) -> MidrasResponse: ...
 
     @abstractmethod
@@ -72,7 +72,7 @@ class AsyncBaseMidras(ABC):
         self, index: str, query: str, quantity: int = 5
     ) -> list[QueryResult]: ...
 
-    def base64_encode_image_list(self, pil_images: list[Image]) -> list[str]:
+    def base64_encode_image_list(self, pil_images: list) -> list[str]:
         base64_images = []
         for image in pil_images:
             with BytesIO() as buffer:
