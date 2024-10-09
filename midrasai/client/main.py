@@ -27,31 +27,34 @@ class Midras(BaseMidras):
     def embed_pdf(
         self, pdf: str | bytes, batch_size: int = 10, include_images: bool = False
     ) -> MidrasResponse:
-        _ = batch_size
-        __ = include_images
-
         if isinstance(pdf, str):
             with open(pdf, "rb") as f:
                 file_data = f.read()
         elif isinstance(pdf, bytes):
             file_data = pdf
-        else:
-            raise ValueError("pdf must be a file path (str) or bytes")
 
         files = {"file": ("test.pdf", file_data, "application/pdf")}
-        response = self.client.post("/embed/pdf", files=files)
+        response = self.client.post(
+            "/embed/pdf",
+            files=files,
+            headers={"Authorization": f"Bearer {self.api_key}"},
+            params={"batch_size": batch_size, "include_images": include_images},
+        )
 
         if response.status_code == 200:
             return MidrasResponse.model_validate(response.json())
         else:
             raise ValueError("Internal server error")
 
-    def embed_images(
-        self, images: list, mode: Mode = Mode.Standard
-    ) -> MidrasResponse:
+    def embed_images(self, images: list, mode: Mode = Mode.Standard) -> MidrasResponse:
         encoded_images = self.base64_encode_image_list(images)
 
-        response = self.client.post("/embed/images", json={"images": encoded_images})
+        response = self.client.post(
+            "/embed/images",
+            json={"images": encoded_images},
+            headers={"Authorization": f"Bearer {self.api_key}"},
+            params={"mode": mode},
+        )
 
         if response.status_code == 200:
             return MidrasResponse.model_validate(response.json())
@@ -70,7 +73,12 @@ class Midras(BaseMidras):
     def embed_queries(
         self, queries: list[str], mode: Mode = Mode.Standard
     ) -> MidrasResponse:
-        response = self.client.post("/embed/queries", json={"queries": queries})
+        response = self.client.post(
+            "/embed/queries",
+            json={"queries": queries},
+            headers={"Authorization": f"Bearer {self.api_key}"},
+            params={"mode": mode},
+        )
 
         if response.status_code == 200:
             return MidrasResponse.model_validate(response.json())
@@ -99,19 +107,19 @@ class AsyncMidras(AsyncBaseMidras):
     async def embed_pdf(
         self, pdf: str | bytes, batch_size: int = 10, include_images: bool = False
     ) -> MidrasResponse:
-        _ = batch_size
-        __ = include_images
-
         if isinstance(pdf, str):
             with open(pdf, "rb") as f:
                 file_data = f.read()
         elif isinstance(pdf, bytes):
             file_data = pdf
-        else:
-            raise ValueError("pdf must be a file path (str) or bytes")
 
         files = {"file": ("test.pdf", file_data, "application/pdf")}
-        response = await self.client.post("/embed/pdf", files=files)
+        response = await self.client.post(
+            "/embed/pdf",
+            files=files,
+            headers={"Authorization": f"Bearer {self.api_key}"},
+            params={"batch_size": batch_size, "include_images": include_images},
+        )
 
         if response.status_code == 200:
             return MidrasResponse.model_validate(response.json())
@@ -124,7 +132,10 @@ class AsyncMidras(AsyncBaseMidras):
         encoded_images = self.base64_encode_image_list(images)
 
         response = await self.client.post(
-            "/embed/images", json={"images": encoded_images}
+            "/embed/images",
+            json={"images": encoded_images},
+            headers={"Authorization": f"Bearer {self.api_key}"},
+            params={"mode": mode},
         )
 
         if response.status_code == 200:
@@ -144,7 +155,12 @@ class AsyncMidras(AsyncBaseMidras):
     async def embed_queries(
         self, queries: list[str], mode: Mode = Mode.Standard
     ) -> MidrasResponse:
-        response = await self.client.post("/embed/queries", json={"queries": queries})
+        response = await self.client.post(
+            "/embed/queries",
+            json={"queries": queries},
+            headers={"Authorization": f"Bearer {self.api_key}"},
+            params={"mode": mode},
+        )
 
         if response.status_code == 200:
             return MidrasResponse.model_validate(response.json())
