@@ -9,7 +9,7 @@ from midrasai.types import MidrasResponse
 from midrasai.vectordb import Qdrant
 
 
-class Midras(BaseMidras):
+class LocalMidras(BaseMidras):
     def __init__(
         self, device_map: str = "cuda:0", vector_database: VectorDB | None = None
     ):

@@ -7,16 +7,16 @@ from fastapi import FastAPI, File, UploadFile
 from PIL import Image
 from pydantic import BaseModel
 
-from midrasai.local import Midras
+from midrasai.local.main import LocalMidras
 from midrasai.types import MidrasResponse
 
-midras = cast(Midras, None)
+midras = cast(LocalMidras, None)
 
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     global midras
-    midras = Midras()
+    midras = LocalMidras()
     yield
 
 

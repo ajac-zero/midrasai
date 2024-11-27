@@ -1,7 +1,9 @@
 # MidrasAI
 
 MidrasAI provides a simple API for using the Colpali model, which is a multi-modal model for text and image retrieval.
-It allows for local and remote access to the model, and integrates a vector database for efficient storage and sematic search.
+It allows for local access to the model, and integrates a vector database for efficient storage and sematic search.
+
+Setting up the model as a server for remote access is a WIP.
 
 ## Getting started
 
@@ -9,24 +11,22 @@ Note: This is an alpha version of MidrasAI. All feedack and suggestions are welc
 
 ### Local Dependencies
 
-- ColPali access: ColPali is based on PaliGemma, you will request access to the model [here](https://huggingface.co/google/paligemma-3b-mix-448). Then you must authenticate through the huggingface-cli to download the model.
+- ColPali access: ColPali is based on PaliGemma, you will need to request access to the model [here](https://huggingface.co/google/paligemma-3b-mix-448). Then you must authenticate through the huggingface-cli to download the model.
 - Poppler: Midras uses `pdf2image` to convert pdfs to images. This library requires `poppler` to be installed on your system. Check out the installation instructions [here](https://poppler.freedesktop.org/).
 - Hardware: ColPali is a 3B parmeter model, so I recommend using a GPU with at least 8GB of VRAM.
 
-### API Dependencies
-
-- API Key: You will need an API key to use MidrasAI. You can get one by logging in to the [MidrasAI website](https://midrasai.com) with your Github account.
-
 ### Installation
 
-If running locally, you can install MidrasAI and its dependencies with pip:
+If running locally, you can install MidrasAI and its dependencies with pip, poetry, or uv:
 ```bash
+# pip
 pip install 'midrasai[local]'
-```
 
-If using the API, you can install MidrasAI by itself without dependencies with pip:
-```bash
-pip install midrasai
+# poetry
+poetry install 'midrasai[local]'
+
+# uv
+uv install 'midrasai[local]'
 ```
 
 ### Usage
@@ -38,18 +38,8 @@ To load the ColPali model locally, you just need to use the `LocalMidras` class:
 ```python3
 from midrasai.local import LocalMidras
 
-midras = LocalMidras() # Make sure your'e logged in to HuggingFace so you can download the model
+midras = LocalMidras() # Make sure you're logged in to HuggingFace so you can download the model
 ```
-
-If you're using the API, you can import the `Midras` class instead, which will not load the model locally:
-```python3
-from midrasai import Midras
-import os
-
-midras = Midras(os.getenv("MIDRAS_API_KEY")) # Using this class requires an API key
-```
-
-Aftert this point, both local and API Midras will work exactly the same.
 
 #### Creating an index
 
@@ -95,12 +85,12 @@ midras.add_point(
 
 ### Searching an index
 
-After you've added data to your index, you can start searching for relevant data. You can use the `query_text` method to do this:
+After you've added data to your index, you can start searching for relevant data. You can use the `query` method to do this:
 
 ```python3
 query = "What is the meaing of life?"
 
-results = midras.query_text(index_name, text=query)
+results = midras.query(index_name, query=query)
 
 # Top 3 relevant data points
 for result in results[:3]:
